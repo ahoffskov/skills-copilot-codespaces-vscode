@@ -1,62 +1,62 @@
 // Create web server
-// Run: node comment.js
-// Test: curl http://localhost:3000/comments
-// Test: curl -X POST -d "comment=Hello" http://localhost:3000/comments
-// Test: curl -X DELETE http://localhost:3000/comments/0
-// Test: curl -X PUT -d "comment=Hello" http://localhost:3000/comments/0
-// Test: curl -X PATCH -d "comment=Hello" http://localhost:3000/comments/0
-// Test: curl http://localhost:3000/comments/0
-// Test: curl http://localhost:3000/comments/1
 
-var http = require('http');
-var url = require('url');
-var items = [];
+// 1. Import Express
+const express = require('express')
+const path = require('path')
+const fs = require('fs')
+const app = express()
 
-var server = http.createServer(function(req, res){
-	switch (req.method) {
-		case 'POST':
-			var item = '';
-			req.setEncoding('utf8');
-			req.on('data', function(chunk){
-				item += chunk;
-			});
-			req.on('end', function(){
-				items.push(item);
-				res.end('OK\n');
-			});
-			break;
-		case 'GET':
-			var body = items.map(function(item, i){
-				return i + ') ' + item;
-			}).join('\n');
-			res.setHeader('Content-Length', Buffer.byteLength(body));
-			res.setHeader('Content-Type', 'text/plain; charset="utf-8"');
-			res.end(body);
-			break;
-		case 'DELETE':
-			var path = url.parse(req.url).pathname;
-			var i = parseInt(path.slice(1), 10);
-			if (isNaN(i)) {
-				res.statusCode = 400;
-				res.end('Invalid item id');
-			} else if (!items[i]) {
-				res.statusCode = 404;
-				res.end('Item not found');
-			} else {
-				items.splice(i, 1);
-				res.end('OK\n');
-			}
-			break;
-		case 'PUT':
-			var path = url.parse(req.url).pathname;
-			var i = parseInt(path.slice(1), 10);
-			if (isNaN(i)) {
-				res.statusCode = 400;
-				res.end('Invalid item id');
-			} else if (!items[i]) {
-				res.statusCode = 404;
-				res.end('Item not found');
-			} else {
-				var item = '';
-				req.setEncoding('utf8');
-				req.on('
+// 2. Setup static folder
+app.use(express.static('public'))
+
+// 3. Setup template engine
+app.set('view engine', 'hbs')
+
+// 4. Setup router
+app.get('/', (req, res) => {
+    const comments = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data/comments.json'), { encoding: 'utf-8' }))
+    res.render('home', {
+        comments: comments
+    })
+})
+
+app.get('/add', (req, res) => {
+    res.render('add')
+})
+
+app.get('/detail/:id', (req, res) => {
+    const comments = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data/comments.json'), { encoding: 'utf-8' }))
+    const comment = comments.find(cmt => cmt.id === req.params.id)
+    res.render('detail', {
+        comment: comment
+    })
+})
+
+app.get('/edit/:id', (req, res) => {
+    const comments = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data/comments.json'), { encoding: 'utf-8' }))
+    const comment = comments.find(cmt => cmt.id === req.params.id)
+    res.render('edit', {
+        comment: comment
+    })
+})
+
+app.get('/delete/:id', (req, res) => {
+    const comments = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data/comments.json'), { encoding: 'utf-8' }))
+    const comment = comments.find(cmt => cmt.id === req.params.id)
+    res.render('delete', {
+        comment: comment
+    })
+})
+
+app.get('/search', (req, res) => {
+    const comments = JSON.parse(fs.readFileSync(path.resolve(__dirname, './data/comments.json'), { encoding: 'utf-8' }))
+    const comment = comments.filter(cmt => cmt.name.toLowerCase().includes(req.query.name.toLowerCase()))
+    res.render('search', {
+        comments: comment
+    })
+})
+
+// 5. Start web server
+app.listen(3000, () => {
+    console.log('Web server running on port 3000')
+})
